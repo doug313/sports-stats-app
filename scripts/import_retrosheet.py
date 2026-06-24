@@ -53,8 +53,8 @@ def create_tables():
                 away_team       VARCHAR(10),
                 home_score      INTEGER,
                 away_score      INTEGER,
-                innings         INTEGER,
-                park_id         VARCHAR(10),
+                home_hits       INTEGER,
+                away_hits       INTEGER,
                 attendance      INTEGER,
                 duration_mins   INTEGER,
                 winning_pitcher VARCHAR(20),
@@ -136,7 +136,9 @@ def parse_games(event_dir: Path, year: int) -> pd.DataFrame:
     for evf in eve_files:
         try:
             result = subprocess.run(
-                ["cwgame", "-y", str(year), "-f", "0-83", str(evf)],
+                ["cwgame", "-y", str(year),
+                 "-f", "0,7,8,18,32,34,35,36,37,42,43,44",
+                 str(evf)],
                 capture_output=True, text=True, timeout=120,
                 cwd=str(event_dir)
             )
@@ -154,21 +156,24 @@ def parse_games(event_dir: Path, year: int) -> pd.DataFrame:
     combined = pd.concat(rows, ignore_index=True)
     try:
         games = pd.DataFrame({
-            "game_id":         combined[0],
-            "date":            pd.to_datetime(combined[1].astype(str),
-                                              format="%Y%m%d", errors="coerce"),
-            "year":            year,
-            "away_team":       combined[3],
-            "home_team":       combined[4],
-            "away_score":      pd.to_numeric(combined[10], errors="coerce"),
-            "home_score":      pd.to_numeric(combined[11], errors="coerce"),
-            "park_id":         combined[17],
-            "attendance":      pd.to_numeric(combined[18], errors="coerce"),
-            "duration_mins":   pd.to_numeric(combined[19], errors="coerce"),
-            "winning_pitcher": combined[36] if len(combined.columns) > 36 else None,
-            "losing_pitcher":  combined[37] if len(combined.columns) > 37 else None,
-            "save_pitcher":    combined[38] if len(combined.columns) > 38 else None,
+            "game_id": combined[0],
+            "date": pd.to_datetime(
+                combined[0].str[3:11],
+                format="%Y%m%d", errors="coerce"),
+            "year": year,
+            "away_team": combined[1],
+            "home_team": combined[2],
+            "attendance": pd.to_numeric(combined[3], errors="coerce"),
+            "duration_mins": pd.to_numeric(combined[4], errors="coerce"),
+            "away_score": pd.to_numeric(combined[5], errors="coerce"),
+            "home_score": pd.to_numeric(combined[6], errors="coerce"),
+            "away_hits": pd.to_numeric(combined[7], errors="coerce"),
+            "home_hits": pd.to_numeric(combined[8], errors="coerce"),
+            "winning_pitcher": combined[9],
+            "losing_pitcher": combined[10],
+            "save_pitcher": combined[11],
         })
+        games = games.drop_duplicates(subset=["game_id"])
         return games.dropna(subset=["game_id"])
     except Exception as e:
         print(f"    WARN game parse: {e}")

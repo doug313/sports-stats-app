@@ -3,9 +3,10 @@ Retrosheet router â€” play-by-play and game logs for ALL completed games (1910â€
 Covers everything except live in-progress games (handled by mlb_live.py).
 """
 
-from fastapi import APIRouter, HTTPException, Query
 from typing import Optional
+
 from db.database import query
+from fastapi import APIRouter, HTTPException, Query
 
 router = APIRouter()
 

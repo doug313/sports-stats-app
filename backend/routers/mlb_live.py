@@ -3,10 +3,11 @@ MLB StatsAPI integration — no API key required.
 Covers live games, play-by-play, box scores, and game search (2008–today).
 """
 
+from datetime import date, timedelta
+from typing import Optional
+
 import httpx
 from fastapi import APIRouter, HTTPException, Query
-from typing import Optional
-from datetime import date, timedelta
 
 router = APIRouter()
 

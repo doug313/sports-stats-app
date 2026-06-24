@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+
 from routers import search, ai_search, players, mlb_live, retro
 
 app = FastAPI(title="Baseball Stats API")

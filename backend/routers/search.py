@@ -1,8 +1,55 @@
-from fastapi import APIRouter, Query
 from typing import Optional
+
 from db.database import query
+from fastapi import APIRouter, Query
 
 router = APIRouter()
+
+# Maps common team names to Lahman team codes
+TEAM_NAME_MAP = {
+    "yankees": "NYA", "new york yankees": "NYA",
+    "mets": "NYN", "new york mets": "NYN",
+    "red sox": "BOS", "boston red sox": "BOS",
+    "dodgers": "LAN", "los angeles dodgers": "LAN",
+    "giants": "SFN", "san francisco giants": "SFN",
+    "cubs": "CHN", "chicago cubs": "CHN",
+    "white sox": "CHA", "chicago white sox": "CHA",
+    "cardinals": "SLN", "st louis cardinals": "SLN", "st. louis cardinals": "SLN",
+    "braves": "ATL", "atlanta braves": "ATL",
+    "phillies": "PHI", "philadelphia phillies": "PHI",
+    "astros": "HOU", "houston astros": "HOU",
+    "rangers": "TEX", "texas rangers": "TEX",
+    "mariners": "SEA", "seattle mariners": "SEA",
+    "padres": "SDN", "san diego padres": "SDN",
+    "angels": "ANA", "los angeles angels": "ANA", "california angels": "CAL",
+    "athletics": "OAK", "oakland athletics": "OAK", "a's": "OAK",
+    "tigers": "DET", "detroit tigers": "DET",
+    "twins": "MIN", "minnesota twins": "MIN",
+    "royals": "KCA", "kansas city royals": "KCA",
+    "orioles": "BAL", "baltimore orioles": "BAL",
+    "blue jays": "TOR", "toronto blue jays": "TOR",
+    "rays": "TBA", "tampa bay rays": "TBA", "devil rays": "TBA",
+    "nationals": "WAS", "washington nationals": "WAS",
+    "marlins": "MIA", "miami marlins": "MIA", "florida marlins": "FLO",
+    "reds": "CIN", "cincinnati reds": "CIN",
+    "pirates": "PIT", "pittsburgh pirates": "PIT",
+    "brewers": "MIL", "milwaukee brewers": "MIL",
+    "rockies": "COL", "colorado rockies": "COL",
+    "diamondbacks": "ARI", "arizona diamondbacks": "ARI",
+    "guardians": "CLE", "cleveland guardians": "CLE", "indians": "CLE", "cleveland indians": "CLE",
+    "tigers": "DET", "detroit tigers": "DET",
+    "cubs": "CHN",
+}
+
+def resolve_team(team: str) -> str:
+    """Convert team name or code to Lahman team code."""
+    if not team:
+        return team
+    # If it's already a short code (2-3 chars), uppercase and return
+    if len(team) <= 3:
+        return team.upper()
+    # Try name lookup
+    return TEAM_NAME_MAP.get(team.lower().strip(), team.upper())
 
 @router.get("/search/batting")
 def search_batting(
@@ -41,7 +88,7 @@ def search_batting(
         params["name"] = f"%{player_name.lower()}%"
     if team:
         conditions.append("b.teamID = :team")
-        params["team"] = team.upper()
+        params["team"] = resolve_team(team)
     if year_from:
         conditions.append("b.yearID >= :year_from")
         params["year_from"] = year_from
@@ -171,7 +218,7 @@ def search_pitching(
         conditions.append("LOWER(p.nameFirst || ' ' || p.nameLast) LIKE :name")
         params["name"] = f"%{player_name.lower()}%"
     if team:
-        conditions.append("pt.teamID = :team"); params["team"] = team.upper()
+        conditions.append("pt.teamID = :team"); params["team"] = resolve_team(team)
     if year_from:
         conditions.append("pt.yearID >= :year_from"); params["year_from"] = year_from
     if year_to:
@@ -276,7 +323,7 @@ def search_fielding(
         conditions.append("LOWER(p.nameFirst || ' ' || p.nameLast) LIKE :name")
         params["name"] = f"%{player_name.lower()}%"
     if team:
-        conditions.append("f.teamID = :team"); params["team"] = team.upper()
+        conditions.append("f.teamID = :team"); params["team"] = resolve_team(team)
     if year_from:
         conditions.append("f.yearID >= :year_from"); params["year_from"] = year_from
     if year_to:

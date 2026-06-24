@@ -610,6 +610,16 @@ export default function Root() {
         </div>
       </header>
       <AppInner />
+      <footer className="footer">
+        ⚾ Diamond Stats — Built with love for baseball nerds everywhere
+        <br />
+        Play-by-play data courtesy of{" "}
+        <a href="https://www.retrosheet.org" target="_blank" rel="noreferrer">Retrosheet</a>.
+        {" "}The information used here was obtained free of charge from and is copyrighted by Retrosheet.
+        <br />
+        Season stats from the{" "}
+        <a href="https://www.seanlahman.com" target="_blank" rel="noreferrer">Lahman Baseball Database</a>.
+      </footer>
     </div>
   )
 }

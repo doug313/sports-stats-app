@@ -1,7 +1,8 @@
 import os
+
+from fastapi import HTTPException
 from sqlalchemy import create_engine, text
 from sqlalchemy.pool import NullPool
-from fastapi import HTTPException
 
 DATABASE_URL = os.environ.get("DATABASE_URL", "sqlite:///./lahman.db")
 

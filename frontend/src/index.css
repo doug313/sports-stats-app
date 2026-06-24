@@ -632,3 +632,16 @@ td:first-child { font-weight: 600; }
   .filter-row { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
   .scorecards { grid-template-columns: repeat(3, 1fr); }
 }
+/* ── footer ──────────────────────────────────────────────────────────────── */
+.footer {
+  text-align: center;
+  padding: 20px 16px;
+  font-size: 11px;
+  color: var(--ink-soft);
+  font-family: sans-serif;
+  border-top: 1px solid var(--border-lt);
+  margin-top: auto;
+  line-height: 1.6;
+}
+.footer a { color: var(--grass); text-decoration: none; }
+.footer a:hover { text-decoration: underline; }

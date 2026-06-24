@@ -1,5 +1,5 @@
-from fastapi import APIRouter
 from db.database import query
+from fastapi import APIRouter
 
 router = APIRouter()
 

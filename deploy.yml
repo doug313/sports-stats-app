@@ -1,0 +1,16 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  # Vercel handles frontend deploys automatically via its GitHub integration.
+  # Railway handles backend deploys automatically via its GitHub integration.
+  # This workflow is a placeholder — both services watch this repo directly.
+  # You can add test steps here if desired.
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deployment triggered
+        run: echo "Push to main — Vercel and Railway will auto-deploy."

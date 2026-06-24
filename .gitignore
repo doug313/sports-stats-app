@@ -1,0 +1,41 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+.venv311/
+*.egg-info/
+
+# Database files
+*.db
+*.sqlite
+
+# Lahman data
+lahman.zip
+lahman-csvs/
+baseballdatabank-master/
+
+# Retrosheet data
+retrosheet-data/
+
+# Chadwick binary
+chadwick/
+
+# Environment
+.env
+.env.local
+
+# PyCharm
+.idea/
+
+# Node
+node_modules/
+dist/
+frontend/.venv/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Test cache
+.pytest_cache/

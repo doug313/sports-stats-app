@@ -1,11 +1,11 @@
-from typing import Optional
-
-from db.database import query
 from fastapi import APIRouter, Query
+from typing import Optional
+from db.database import query
 
 router = APIRouter()
 
-# Maps common team names to Lahman team codes
+# ── team name → Lahman code mapping ──────────────────────────────────────────
+
 TEAM_NAME_MAP = {
     "yankees": "NYA", "new york yankees": "NYA",
     "mets": "NYN", "new york mets": "NYN",
@@ -14,42 +14,43 @@ TEAM_NAME_MAP = {
     "giants": "SFN", "san francisco giants": "SFN",
     "cubs": "CHN", "chicago cubs": "CHN",
     "white sox": "CHA", "chicago white sox": "CHA",
-    "cardinals": "SLN", "st louis cardinals": "SLN", "st. louis cardinals": "SLN",
+    "cardinals": "SLN", "st louis cardinals": "SLN",
+    "st. louis cardinals": "SLN",
     "braves": "ATL", "atlanta braves": "ATL",
     "phillies": "PHI", "philadelphia phillies": "PHI",
     "astros": "HOU", "houston astros": "HOU",
     "rangers": "TEX", "texas rangers": "TEX",
     "mariners": "SEA", "seattle mariners": "SEA",
     "padres": "SDN", "san diego padres": "SDN",
-    "angels": "ANA", "los angeles angels": "ANA", "california angels": "CAL",
-    "athletics": "OAK", "oakland athletics": "OAK", "a's": "OAK",
+    "angels": "ANA", "los angeles angels": "ANA",
+    "athletics": "OAK", "oakland athletics": "OAK", "as": "OAK",
     "tigers": "DET", "detroit tigers": "DET",
     "twins": "MIN", "minnesota twins": "MIN",
     "royals": "KCA", "kansas city royals": "KCA",
     "orioles": "BAL", "baltimore orioles": "BAL",
     "blue jays": "TOR", "toronto blue jays": "TOR",
-    "rays": "TBA", "tampa bay rays": "TBA", "devil rays": "TBA",
+    "rays": "TBA", "tampa bay rays": "TBA",
     "nationals": "WAS", "washington nationals": "WAS",
-    "marlins": "MIA", "miami marlins": "MIA", "florida marlins": "FLO",
+    "marlins": "MIA", "miami marlins": "MIA",
     "reds": "CIN", "cincinnati reds": "CIN",
     "pirates": "PIT", "pittsburgh pirates": "PIT",
     "brewers": "MIL", "milwaukee brewers": "MIL",
     "rockies": "COL", "colorado rockies": "COL",
     "diamondbacks": "ARI", "arizona diamondbacks": "ARI",
-    "guardians": "CLE", "cleveland guardians": "CLE", "indians": "CLE", "cleveland indians": "CLE",
-    "tigers": "DET", "detroit tigers": "DET",
-    "cubs": "CHN",
+    "guardians": "CLE", "cleveland guardians": "CLE",
+    "indians": "CLE", "cleveland indians": "CLE",
 }
 
 def resolve_team(team: str) -> str:
-    """Convert team name or code to Lahman team code."""
+    """Convert team name or Lahman code to canonical Lahman team code."""
     if not team:
         return team
-    # If it's already a short code (2-3 chars), uppercase and return
     if len(team) <= 3:
         return team.upper()
-    # Try name lookup
     return TEAM_NAME_MAP.get(team.lower().strip(), team.upper())
+
+
+# ── batting search ────────────────────────────────────────────────────────────
 
 @router.get("/search/batting")
 def search_batting(
@@ -57,8 +58,7 @@ def search_batting(
     team:          Optional[str]   = None,
     year_from:     Optional[int]   = None,
     year_to:       Optional[int]   = None,
-    bats:          Optional[str]   = None,   # L, R, B
-    # Counting stats — min/max
+    bats:          Optional[str]   = None,
     min_g:         Optional[int]   = None,
     min_ab:        Optional[int]   = None,
     min_hr:        Optional[int]   = None,   max_hr:  Optional[int]   = None,
@@ -70,12 +70,10 @@ def search_batting(
     min_runs:      Optional[int]   = None,
     min_2b:        Optional[int]   = None,
     min_3b:        Optional[int]   = None,
-    # Rate stats
     min_avg:       Optional[float] = None,   max_avg: Optional[float] = None,
     min_obp:       Optional[float] = None,
     min_slg:       Optional[float] = None,
     min_ops:       Optional[float] = None,
-    # Sort
     sort_by:       Optional[str]   = "year",
     sort_dir:      Optional[str]   = "desc",
     limit:         int             = Query(default=50, le=200),
@@ -186,14 +184,16 @@ def search_batting(
     return query(sql, params)
 
 
+# ── pitching search ───────────────────────────────────────────────────────────
+
 @router.get("/search/pitching")
 def search_pitching(
     player_name:   Optional[str]   = None,
     team:          Optional[str]   = None,
     year_from:     Optional[int]   = None,
     year_to:       Optional[int]   = None,
-    throws:        Optional[str]   = None,   # L, R
-    starter:       Optional[str]   = None,   # "yes" = GS>0, "no" = GS=0 (relievers)
+    throws:        Optional[str]   = None,
+    starter:       Optional[str]   = None,
     min_g:         Optional[int]   = None,
     min_gs:        Optional[int]   = None,
     min_wins:      Optional[int]   = None,
@@ -206,7 +206,7 @@ def search_pitching(
     min_cg:        Optional[int]   = None,
     min_sho:       Optional[int]   = None,
     max_whip:      Optional[float] = None,
-    min_k9:        Optional[float] = None,   # K/9
+    min_k9:        Optional[float] = None,
     sort_by:       Optional[str]   = "year",
     sort_dir:      Optional[str]   = "desc",
     limit:         int             = Query(default=50, le=200),
@@ -218,7 +218,8 @@ def search_pitching(
         conditions.append("LOWER(p.nameFirst || ' ' || p.nameLast) LIKE :name")
         params["name"] = f"%{player_name.lower()}%"
     if team:
-        conditions.append("pt.teamID = :team"); params["team"] = resolve_team(team)
+        conditions.append("pt.teamID = :team")
+        params["team"] = resolve_team(team)
     if year_from:
         conditions.append("pt.yearID >= :year_from"); params["year_from"] = year_from
     if year_to:
@@ -306,6 +307,8 @@ def search_pitching(
     return query(sql, params)
 
 
+# ── fielding search ───────────────────────────────────────────────────────────
+
 @router.get("/search/fielding")
 def search_fielding(
     player_name: Optional[str] = None,
@@ -319,11 +322,13 @@ def search_fielding(
 ):
     conditions = ["1=1"]
     params = {}
+
     if player_name:
         conditions.append("LOWER(p.nameFirst || ' ' || p.nameLast) LIKE :name")
         params["name"] = f"%{player_name.lower()}%"
     if team:
-        conditions.append("f.teamID = :team"); params["team"] = resolve_team(team)
+        conditions.append("f.teamID = :team")
+        params["team"] = resolve_team(team)
     if year_from:
         conditions.append("f.yearID >= :year_from"); params["year_from"] = year_from
     if year_to:
@@ -359,6 +364,8 @@ def search_fielding(
     params["limit"] = limit
     return query(sql, params)
 
+
+# ── meta endpoints ────────────────────────────────────────────────────────────
 
 @router.get("/teams")
 def get_teams():

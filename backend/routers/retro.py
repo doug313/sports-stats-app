@@ -1,10 +1,10 @@
 """
-Retrosheet router — play-by-play and game logs for ALL completed games (1910–2025).
+Retrosheet router — play-by-play and game logs for ALL completed games (1920–2025).
 Covers everything except live in-progress games (handled by mlb_live.py).
 
 Tables:
   retro_games   — one row per game
-  retro_events  — one row per play (36 verified fields + event_num)
+  retro_events  — one row per play (36 verified fields + derived event_num)
   retro_people  — Retrosheet player ID → full name (from BIOFILE)
 
 Event codes (event_cd):
@@ -73,7 +73,7 @@ def search_games(
     min_runs:   Optional[int] = None,
     limit:      int           = Query(default=50, le=200),
 ):
-    """Search historical games from Retrosheet (1910–2025)."""
+    """Search historical games from Retrosheet (1920–2025)."""
     conditions = ["1=1"]
     params: dict = {}
 
@@ -208,7 +208,7 @@ def game_plays(
     }
 
 
-# ── player game log ───────────────────────────────────────────────────────────
+# ── player batting game log ───────────────────────────────────────────────────
 
 @router.get("/retro/player/{player_id}/gamelog")
 def player_gamelog(
@@ -294,6 +294,92 @@ def player_gamelog(
         _retro_error(ex)
 
 
+# ── player pitching game log ──────────────────────────────────────────────────
+
+@router.get("/retro/player/{player_id}/pitching")
+def player_pitching_log(
+    player_id: str,
+    year_from: Optional[int]   = None,
+    year_to:   Optional[int]   = None,
+    min_so:    Optional[int]   = None,
+    min_ip:    Optional[float] = None,
+    limit:     int             = Query(default=100, le=500),
+):
+    """
+    Game-by-game pitching log for a player.
+    Uses Retrosheet player IDs (e.g. koufasa01 for Sandy Koufax).
+    Aggregates all events where this player was the pitcher per game.
+    """
+    conditions = ["e.pitcher_id = :pid", "e.batter_event_fl = 'T'"]
+    params: dict = {"pid": player_id}
+
+    if year_from:
+        conditions.append("g.year >= :year_from")
+        params["year_from"] = year_from
+    if year_to:
+        conditions.append("g.year <= :year_to")
+        params["year_to"] = year_to
+
+    having = []
+    if min_so is not None:
+        having.append("SUM(CASE WHEN e.event_cd = 3 THEN 1 ELSE 0 END) >= :min_so")
+        params["min_so"] = min_so
+    if min_ip is not None:
+        having.append("SUM(e.outs_on_play) / 3.0 >= :min_ip")
+        params["min_ip"] = min_ip
+
+    where      = " AND ".join(conditions)
+    having_sql = f"HAVING {' AND '.join(having)}" if having else ""
+
+    sql = f"""
+        SELECT
+            g.date,
+            g.year,
+            CASE e.batting_team
+                WHEN '0' THEN g.home_team
+                ELSE g.away_team
+            END                                                            AS team,
+            CASE e.batting_team WHEN '0' THEN 'Home' ELSE 'Away' END      AS home_away,
+            CASE e.batting_team
+                WHEN '0' THEN g.away_team
+                ELSE g.home_team
+            END                                                            AS opponent,
+            g.away_score,
+            g.home_score,
+            ROUND(SUM(e.outs_on_play) / 3.0, 1)                          AS ip,
+            COUNT(DISTINCT e.event_num)                                    AS bf,
+            SUM(CASE WHEN e.hit_value > 0 THEN 1 ELSE 0 END)             AS hits_allowed,
+            SUM(COALESCE(e.runs_scored, 0))                               AS runs_allowed,
+            SUM(CASE WHEN e.event_cd = 3 THEN 1 ELSE 0 END)              AS strikeouts,
+            SUM(CASE WHEN e.event_cd IN (14,15) THEN 1 ELSE 0 END)       AS walks,
+            SUM(CASE WHEN e.event_cd = 23 THEN 1 ELSE 0 END)             AS hr_allowed,
+            SUM(CASE WHEN e.wp_flag = 'T' THEN 1 ELSE 0 END)             AS wild_pitches,
+            SUM(CASE WHEN e.num_errors > 0 THEN e.num_errors ELSE 0 END) AS errors_behind,
+            CASE
+                WHEN g.winning_pitcher = e.pitcher_id THEN 'W'
+                WHEN g.losing_pitcher  = e.pitcher_id THEN 'L'
+                WHEN g.save_pitcher    = e.pitcher_id THEN 'S'
+                ELSE ''
+            END                                                            AS decision,
+            e.game_id
+        FROM retro_events e
+        JOIN retro_games g ON e.game_id = g.game_id
+        WHERE {where}
+        GROUP BY
+            e.game_id, e.pitcher_id, g.date, g.year, e.batting_team,
+            g.away_team, g.home_team, g.away_score, g.home_score,
+            g.winning_pitcher, g.losing_pitcher, g.save_pitcher
+        {having_sql}
+        ORDER BY g.date DESC
+        LIMIT :limit
+    """
+    params["limit"] = limit
+    try:
+        return query(sql, params)
+    except Exception as ex:
+        _retro_error(ex)
+
+
 # ── advanced search ───────────────────────────────────────────────────────────
 
 @router.get("/retro/search")
@@ -301,12 +387,10 @@ def advanced_search(
     team:             Optional[str]  = None,
     year_from:        Optional[int]  = None,
     year_to:          Optional[int]  = None,
-    # batting game filters
     min_hits_game:    Optional[int]  = None,
     max_runs_game:    Optional[int]  = None,
     min_hr_game:      Optional[int]  = None,
     min_rbi_game:     Optional[int]  = None,
-    # pitching game filters
     shutout:          Optional[bool] = None,
     no_hitter:        Optional[bool] = None,
     min_k_game:       Optional[int]  = None,
@@ -315,11 +399,9 @@ def advanced_search(
     limit:            int            = Query(default=50, le=200),
 ):
     """
-    Advanced game-level search.
-    All stats derived from retro_events play-by-play data.
-
-    Batting search: find games where a specific batter had X hits, Y HR, etc.
-    Pitching search: find games with shutouts, no-hitters, high strikeout totals.
+    Advanced game-level search derived entirely from retro_events + retro_games.
+    Batting: find games where a player had X hits, Y HR, etc.
+    Pitching: find shutouts, no-hitters, high strikeout games.
     """
     params: dict = {"limit": limit}
 
@@ -442,7 +524,7 @@ def advanced_search(
             LEFT JOIN retro_people rp ON g.winning_pitcher  = rp.retro_id
             WHERE {where}
             GROUP BY
-                g.game_id, g.date, g.year,
+                g.game_id, e.batting_team, g.date, g.year,
                 g.away_team, g.away_score,
                 g.home_team, g.home_score,
                 g.winning_pitcher, rp.full_name

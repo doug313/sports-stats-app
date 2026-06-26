@@ -81,6 +81,86 @@ const COLS = {
     { key: "home_score",  label: "Home" },
     { key: "description", label: "Description" },
   ],
+  retro_games: [
+    { key: "date",            label: "Date" },
+    { key: "away_team",       label: "Away" },
+    { key: "away_score",      label: "R" },
+    { key: "away_hits",       label: "H" },
+    { key: "home_team",       label: "Home" },
+    { key: "home_score",      label: "R" },
+    { key: "home_hits",       label: "H" },
+    { key: "winning_pitcher", label: "WP" },
+    { key: "attendance",      label: "Att" },
+  ],
+  retro_batting: [
+    { key: "date",       label: "Date" },
+    { key: "team",       label: "Team" },
+    { key: "home_away",  label: "H/A" },
+    { key: "opponent",   label: "Opp" },
+    { key: "away_score", label: "Away R" },
+    { key: "home_score", label: "Home R" },
+    { key: "ab",         label: "AB" },
+    { key: "hits",       label: "H" },
+    { key: "doubles",    label: "2B" },
+    { key: "triples",    label: "3B" },
+    { key: "hr",         label: "HR" },
+    { key: "rbi",        label: "RBI" },
+    { key: "walks",      label: "BB" },
+    { key: "strikeouts", label: "K" },
+    { key: "runs",       label: "R" },
+  ],
+  retro_pitching: [
+    { key: "date",         label: "Date" },
+    { key: "team",         label: "Team" },
+    { key: "home_away",    label: "H/A" },
+    { key: "opponent",     label: "Opp" },
+    { key: "away_score",   label: "Away R" },
+    { key: "home_score",   label: "Home R" },
+    { key: "ip",           label: "IP",  fmt: v => v?.toFixed(1) ?? "—" },
+    { key: "strikeouts",   label: "K" },
+    { key: "walks",        label: "BB" },
+    { key: "hits_allowed", label: "H" },
+    { key: "runs_allowed", label: "R" },
+    { key: "decision",     label: "Dec" },
+  ],
+  retro_advanced: [
+    { key: "date",        label: "Date" },
+    { key: "player_name", label: "Player" },
+    { key: "team",        label: "Team" },
+    { key: "opponent",    label: "Opp" },
+    { key: "away_score",  label: "Away R" },
+    { key: "home_score",  label: "Home R" },
+    { key: "ab",          label: "AB" },
+    { key: "hits",        label: "H" },
+    { key: "hr",          label: "HR" },
+    { key: "rbi",         label: "RBI" },
+    { key: "runs",        label: "R" },
+    { key: "strikeouts",  label: "K" },
+  ],
+  retro_pitching_search: [
+    { key: "date",                 label: "Date" },
+    { key: "winning_pitcher_name", label: "Pitcher" },
+    { key: "away_team",            label: "Away" },
+    { key: "away_score",           label: "R" },
+    { key: "home_team",            label: "Home" },
+    { key: "home_score",           label: "R" },
+    { key: "hits_allowed",         label: "H" },
+    { key: "runs_allowed",         label: "R" },
+    { key: "strikeouts",           label: "K" },
+    { key: "walks",                label: "BB" },
+  ],
+  retro_plays: [
+    { key: "event_num",    label: "#" },
+    { key: "inning",       label: "Inn" },
+    { key: "batting_team", label: "Batting" },
+    { key: "outs",         label: "Out" },
+    { key: "batter",       label: "Batter" },
+    { key: "pitcher",      label: "Pitcher" },
+    { key: "play_text",    label: "Play" },
+    { key: "event_type",   label: "Result" },
+    { key: "rbi",          label: "RBI" },
+    { key: "runs_scored",  label: "R" },
+  ],
 }
 
 // ── filter config ─────────────────────────────────────────────────────────────
@@ -97,7 +177,7 @@ const FILTER_CONFIG = {
     sections: [
       { title: "Player & season", fields: [
         { id: "player_name", label: "Player name", type: "text", placeholder: "e.g. Babe Ruth", wide: true },
-        { id: "team",        label: "Team ID",     type: "text", placeholder: "NYA" },
+        { id: "team",        label: "Team",        type: "text", placeholder: "NYA or Yankees" },
         { id: "year_from",   label: "Season from", type: "number", placeholder: "1920" },
         { id: "year_to",     label: "Season to",   type: "number", placeholder: "2024" },
         { id: "bats",        label: "Bats", type: "select",
@@ -137,7 +217,7 @@ const FILTER_CONFIG = {
     sections: [
       { title: "Player & season", fields: [
         { id: "player_name", label: "Player name", type: "text", placeholder: "e.g. Roger Clemens", wide: true },
-        { id: "team",        label: "Team ID",     type: "text", placeholder: "NYA" },
+        { id: "team",        label: "Team",        type: "text", placeholder: "NYA or Yankees" },
         { id: "year_from",   label: "Season from", type: "number", placeholder: "1980" },
         { id: "year_to",     label: "Season to",   type: "number", placeholder: "2024" },
         { id: "throws",  label: "Throws", type: "select",
@@ -174,7 +254,7 @@ const FILTER_CONFIG = {
     sections: [
       { title: "Player & season", fields: [
         { id: "player_name", label: "Player name", type: "text", placeholder: "e.g. Ozzie Smith", wide: true },
-        { id: "team",        label: "Team ID",     type: "text", placeholder: "SLN" },
+        { id: "team",        label: "Team",        type: "text", placeholder: "SLN or Cardinals" },
         { id: "year_from",   label: "Season from", type: "number", placeholder: "1980" },
         { id: "year_to",     label: "Season to",   type: "number", placeholder: "2024" },
         { id: "position", label: "Position", type: "select", options: [
@@ -365,7 +445,18 @@ function AiSearch({ onResults, onGameClick }) {
       setExplanation(data.explanation)
       setSql(data.sql || "")
       setSource(data.source)
-      onResults(data.results, data.source === "mlb_api" ? "mlb_api" : "batting")
+      const mode = data.source === "mlb_api" ? "mlb_api"
+             : data.source === "lahman"   ? "batting"
+             : data.action  === "search_games"    ? "retro_games"
+             : data.action  === "player_gamelog"  ? "retro_batting"
+             : data.action  === "player_pitching" ? "retro_pitching"
+             : data.action  === "advanced_search" ? (
+                 (data.params?.shutout || data.params?.no_hitter || data.params?.min_k_game)
+                 ? "retro_pitching_search" : "retro_advanced"
+               )
+             : data.action  === "game_plays"      ? "retro_plays"
+             : "batting"
+      onResults(data.results, mode)
     } catch (e) { setError(e.message) }
     finally { setLoading(false) }
   }, [q, onResults])
@@ -399,7 +490,9 @@ function AiSearch({ onResults, onGameClick }) {
       {explanation && (
         <div className="ai-explanation">
           <span className={`source-badge src-${source}`}>
-            {source === "mlb_api" ? "MLB API" : "Lahman DB"}
+            {source === "mlb_api" ? "MLB API"
+           : source === "retrosheet" ? "Retrosheet"
+           : "Lahman DB"}
           </span>
           <span>{explanation}</span>
           {sql && <button className="link-btn" onClick={() => setShowSql(v => !v)}>

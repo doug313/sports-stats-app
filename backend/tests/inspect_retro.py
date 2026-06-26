@@ -1,8 +1,3 @@
-"""
-Inspect raw cwgame output to verify field mappings.
-Run from the backend/ folder.
-"""
-
 import subprocess, zipfile, tempfile, requests
 from pathlib import Path
 
@@ -22,22 +17,19 @@ with tempfile.TemporaryDirectory() as tmp:
     with zipfile.ZipFile(zpath) as z:
         z.extractall(out_dir)
 
-    # Pick one EVA file
     evf = next(f for f in out_dir.iterdir() if f.suffix.upper() == '.EVA')
     print(f"Using: {evf.name}")
 
-    # Run cwgame with our field list
     result = subprocess.run(
-        ["cwgame", "-y", str(YEAR),
-         "-f", "0,7,8,34,35,36,37,18,32,42,43,44",
+        ["cwevent", "-y", str(YEAR),
+         "-f", "0,2,3,4,5,6,10,14,34,37,40,43,58,96,29",
          str(evf)],
         capture_output=True, text=True, timeout=120,
         cwd=str(out_dir)
     )
 
     lines = result.stdout.strip().split('\n')
-    print(f"\nTotal lines: {len(lines)}")
-    print(f"\nFirst 5 rows:")
+    print(f"\nFirst 5 rows with column indices:")
     for line in lines[:5]:
         fields = line.split(',')
         print(f"\n  Raw: {line}")

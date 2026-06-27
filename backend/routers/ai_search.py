@@ -32,9 +32,9 @@ NEVER use for individual game results or play-by-play.
 
 LAHMAN SCHEMA (all table AND column names are lowercase):
 people       (playerid, namefirst, namelast, birthyear, birthcountry, weight, height, bats, throws, debut, finalgame)
-batting      (playerid, yearid, teamid, g, ab, r, h, b2, b3, hr, rbi, sb, cs, bb, so, ibb, hbp, sh, sf, gidp)
+batting      (playerid, yearid, teamid, g, ab, r, h, "2b", "3b", hr, rbi, sb, cs, bb, so, ibb, hbp, sh, sf, gidp)
              -- avg = CAST(h AS FLOAT)/NULLIF(ab,0)
-             -- NOTE: 2B column is named b2, 3B column is named b3
+             -- NOTE: 2B column is named "2b", 3B column is named "3b" (use double quotes)
 pitching     (playerid, yearid, teamid, w, l, g, gs, cg, sho, sv, ipouts, h, er, hr, bb, so, era, wp, bk, bfp, r)
              -- ipouts/3 = innings pitched. Use era::NUMERIC for ROUND()
 fielding     (playerid, yearid, teamid, pos, g, gs, innouts, po, a, e, dp)

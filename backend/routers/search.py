@@ -114,13 +114,13 @@ def search_batting(
     if min_runs is not None:
         conditions.append("b.r >= :min_runs"); params["min_runs"] = min_runs
     if min_2b is not None:
-        conditions.append("b.b2 >= :min_2b"); params["min_2b"] = min_2b
+        conditions.append('b."2b" >= :min_2b'); params["min_2b"] = min_2b
     if min_3b is not None:
-        conditions.append("b.b3 >= :min_3b"); params["min_3b"] = min_3b
+        conditions.append('b."3b" >= :min_3b'); params["min_3b"] = min_3b
 
     avg_expr  = "CAST(b.h AS FLOAT) / NULLIF(b.ab, 0)"
     obp_expr  = "CAST(b.h + COALESCE(b.bb,0) + COALESCE(b.hbp,0) AS FLOAT) / NULLIF(b.ab + COALESCE(b.bb,0) + COALESCE(b.hbp,0) + COALESCE(b.sf,0), 0)"
-    slg_expr  = "CAST(b.h + COALESCE(b.b2,0) + 2*COALESCE(b.b3,0) + 3*b.hr AS FLOAT) / NULLIF(b.ab, 0)"
+    slg_expr  = 'CAST(b.h + COALESCE(b."2b",0) + 2*COALESCE(b."3b",0) + 3*b.hr AS FLOAT) / NULLIF(b.ab, 0)'
     ops_expr  = f"({obp_expr}) + ({slg_expr})"
 
     if min_avg is not None:
@@ -154,8 +154,8 @@ def search_batting(
             b.ab      AS at_bats,
             b.r       AS runs,
             b.h       AS hits,
-            b.b2      AS doubles,
-            b.b3      AS triples,
+            b."2b"    AS doubles,
+            b."3b"    AS triples,
             b.hr      AS home_runs,
             b.rbi     AS rbi,
             b.sb      AS stolen_bases,

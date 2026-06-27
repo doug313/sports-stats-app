@@ -524,7 +524,7 @@ def advanced_search(
             LEFT JOIN retro_people rp ON g.winning_pitcher  = rp.retro_id
             WHERE {where}
             GROUP BY
-                g.game_id, g.date, g.year,
+                g.game_id, e.batting_team, g.date, g.year,
                 g.away_team, g.away_score,
                 g.home_team, g.home_score,
                 g.winning_pitcher, rp.full_name

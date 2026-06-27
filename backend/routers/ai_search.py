@@ -30,13 +30,13 @@ NEVER use for individual game results or play-by-play.
   "explanation": "<one sentence>"
 }
 
-LAHMAN SCHEMA (all table AND column names are lowercase):
+LAHMAN SCHEMA (ALL table AND column names are lowercase — critical for Postgres):
 people       (playerid, namefirst, namelast, birthyear, birthcountry, weight, height, bats, throws, debut, finalgame)
 batting      (playerid, yearid, teamid, g, ab, r, h, "2b", "3b", hr, rbi, sb, cs, bb, so, ibb, hbp, sh, sf, gidp)
              -- avg = CAST(h AS FLOAT)/NULLIF(ab,0)
-             -- NOTE: 2B column is named "2b", 3B column is named "3b" (use double quotes)
+             -- CRITICAL: doubles column is "2b" and triples column is "3b" — always use double quotes around them
 pitching     (playerid, yearid, teamid, w, l, g, gs, cg, sho, sv, ipouts, h, er, hr, bb, so, era, wp, bk, bfp, r)
-             -- ipouts/3 = innings pitched. Use era::NUMERIC for ROUND()
+             -- ipouts/3 = innings pitched
 fielding     (playerid, yearid, teamid, pos, g, gs, innouts, po, a, e, dp)
 teams        (yearid, teamid, franchid, divid, rank, g, w, l, r, ab, h, hr, bb, so, ra, er, era, name, park, attendance)
 awardsplayers(playerid, awardid, yearid, lgid)
@@ -45,12 +45,16 @@ halloffame   (playerid, yearid, votedby, ballots, needed, votes, inducted, categ
 appearances  (playerid, yearid, teamid, g_all, g_p, g_c, g_1b, g_2b, g_3b, g_ss, g_lf, g_cf, g_rf, g_of, g_dh)
 salaries     (playerid, yearid, teamid, lgid, salary)
 Always JOIN people for player names. Always LIMIT to 100 rows max.
-CRITICAL: Use ::NUMERIC cast for ROUND() e.g. ROUND(era::NUMERIC, 2)
+CRITICAL SQL RULES:
+  - ALL column and table names must be lowercase
+  - ROUND() requires ::NUMERIC cast: ROUND(era::NUMERIC, 2) not ROUND(era, 2)
+  - doubles/triples need quotes: b."2b", b."3b"
+  - Use CAST(x AS FLOAT) for division to avoid integer division
 
 ━━━ SOURCE 2: retrosheet ━━━
-Game-level and play-by-play data. 1920–2025 (ALL completed games).
+Game-level and play-by-play data. 1950–2025 (completed games only).
 Use for: ANY specific game results, play-by-play, game logs, no-hitters, shutouts, cycles.
-This covers ALL completed games including modern seasons 2024/2025.
+This covers ALL completed games 1950 through 2025.
 
 {
   "source": "retrosheet",
@@ -61,28 +65,33 @@ This covers ALL completed games including modern seasons 2024/2025.
 
 ACTIONS:
 search_games  — find games by team/date/score. Params:
-  { "team": "NYA", "year_from": 1950, "year_to": 2024, "min_runs": 10, "limit": 50 }
+  { "team": "NYA", "year_from": 1955, "year_to": 2024, "min_runs": 10, "limit": 50 }
 
 game_plays    — play-by-play for one specific game. Params:
   { "game_id": "NYA196106180", "inning": 9, "event": "hr" }
   -- event: "hits" | "hr" | "so" | "bb" | "single" | "double" | "triple"
 
 player_gamelog — game-by-game BATTING stats for a player. Params:
-  { "player_id": "ruthba01", "year_from": 1926, "year_to": 1932,
+  { "player_id": "mantm101", "year_from": 1956, "year_to": 1961,
     "min_hits": 3, "min_hr": 1, "min_rbi": 3 }
-  -- IMPORTANT: uses Retrosheet player IDs (different from Lahman IDs)
-  -- Common IDs: ruthba01=Babe Ruth, mantm101=Mickey Mantle, aaroh101=Hank Aaron
-  -- bondsba01=Barry Bonds, judgeaa01=Aaron Judge, ohtansh01=Shohei Ohtani
+  -- CRITICAL: Retrosheet IDs differ from Lahman IDs. Use these verified IDs:
+  -- mantm101=Mickey Mantle, aaroh101=Hank Aaron, mayswi01=Willie Mays
+  -- ruthb101=Babe Ruth, jeted001=Derek Jeter, bondb001=Barry Bonds
+  -- judga001=Aaron Judge, ohtas001=Shohei Ohtani, troud001=Mike Trout
+  -- ripkca01=Cal Ripken Jr, schmim01=Mike Schmidt, brettg001=George Brett
+  -- Data only available 1950-2025
 
 player_pitching — game-by-game PITCHING stats for a player. Params:
-  { "player_id": "koufasa01", "year_from": 1963, "year_to": 1966,
+  { "player_id": "koufs101", "year_from": 1963, "year_to": 1966,
     "min_so": 10, "min_ip": 6.0 }
   -- Use for: pitcher game logs, individual starts, high strikeout games
-  -- Common IDs: koufasa01=Sandy Koufax, gibsobo01=Bob Gibson, ryanno01=Nolan Ryan
-  -- clemero02=Roger Clemens, johnsra05=Randy Johnson, maddugr02=Greg Maddux
+  -- Verified IDs: koufs101=Sandy Koufax, gibsb001=Bob Gibson, ryann001=Nolan Ryan
+  -- clemr001=Roger Clemens, johnsra05=Randy Johnson, maddug002=Greg Maddux
+  -- schermax01=Max Scherzer, kershcl01=Clayton Kershaw, verlaju01=Justin Verlander
+  -- Data only available 1950-2025
 
 advanced_search — MOST POWERFUL. Search by game-level performance. Params:
-  { "team": "NYA", "year_from": 1950, "year_to": 2024,
+  { "team": "NYA", "year_from": 1955, "year_to": 2024,
     "min_hits_game": 4,       <- player had 4+ hits in a game
     "max_runs_game": 0,       <- player scored 0 runs
     "min_hr_game": 2,         <- player hit 2+ HR in a game
@@ -90,29 +99,31 @@ advanced_search — MOST POWERFUL. Search by game-level performance. Params:
     "shutout": true,          <- pitcher allowed 0 runs
     "min_k_game": 10,         <- pitcher struck out 10+
     "max_hits_allowed": 3,    <- pitcher allowed 3 or fewer hits
-    "no_hitter": true,        <- no-hitter
+    "no_hitter": true,        <- no-hitter (0 hits allowed)
     "limit": 50 }
 
 ━━━ ROUTING DECISION TREE ━━━
-
 Career/season totals, awards, HOF, salaries? → lahman
 Specific game results, play-by-play, game logs, individual game performances? → retrosheet
+Pre-1950 game data? → lahman only (no Retrosheet data before 1950)
 
 ━━━ EXAMPLES ━━━
-"most career home runs all time"                        → lahman
-"Hall of Famers born in Dominican Republic"             → lahman
-"Babe Ruth career stats"                                → lahman
-"highest single season ERA ever"                        → lahman
+"most career home runs all time"                        → lahman SQL on batting
+"Hall of Famers born in Dominican Republic"             → lahman SQL on halloffame + people
+"Babe Ruth career stats"                                → lahman SQL on batting WHERE playerid='ruthba01'
+"highest single season ERA ever"                        → lahman SQL on pitching ORDER BY era
 "Yankees 2024 season results"                           → retrosheet search_games (team:NYA, year_from:2024, year_to:2024)
 "4 hits and no runs in a game"                          → retrosheet advanced_search (min_hits_game:4, max_runs_game:0)
 "no-hitters since 2010"                                 → retrosheet advanced_search (no_hitter:true, year_from:2010)
 "complete game shutouts with 10+ strikeouts"            → retrosheet advanced_search (shutout:true, min_k_game:10)
-"Babe Ruth game log 1927"                               → retrosheet player_gamelog (player_id:ruthba01, year_from:1927, year_to:1927)
+"Mickey Mantle game log 1961"                           → retrosheet player_gamelog (player_id:mantm101, year_from:1961, year_to:1961)
 "Aaron Judge games with 2+ HR in 2022"                 → retrosheet advanced_search (min_hr_game:2, year_from:2022, year_to:2022)
-"Sandy Koufax 1965 pitching game log"                  → retrosheet player_pitching (player_id:koufasa01, year_from:1965, year_to:1965)
-"Bob Gibson games with 10+ strikeouts"                  → retrosheet player_pitching (player_id:gibsobo01, min_so:10)
-"Shohei Ohtani 2023 starts"                             → retrosheet player_pitching (player_id:ohtansh01, year_from:2023, year_to:2023)
-"Yankees vs Red Sox games 1961"                         → retrosheet search_games (team:NYA, year_from:1961, year_to:1961)
+"Sandy Koufax 1965 pitching game log"                  → retrosheet player_pitching (player_id:koufs101, year_from:1965, year_to:1965)
+"Bob Gibson games with 10+ strikeouts"                  → retrosheet player_pitching (player_id:gibsb001, min_so:10)
+"Shohei Ohtani 2023 starts"                             → retrosheet player_pitching (player_id:ohtas001, year_from:2023, year_to:2023)
+"Yankees vs Red Sox games 1978"                         → retrosheet search_games (team:NYA, year_from:1978, year_to:1978)
+"Derek Jeter 1998 season batting"                       → retrosheet player_gamelog (player_id:jeted001, year_from:1998, year_to:1998)
+"Barry Bonds 2001 home run games"                       → retrosheet advanced_search (min_hr_game:1, year_from:2001, year_to:2001) with player lookup
 """
 
 
@@ -126,6 +137,7 @@ class AISearchResponse(BaseModel):
     row_count: int
     sql: str | None = None
     action: str | None = None
+    params: dict | None = None
 
 
 @router.post("/ai-search", response_model=AISearchResponse)
@@ -268,6 +280,7 @@ async def ai_search(req: AISearchRequest):
 
         return AISearchResponse(
             source="retrosheet", explanation=explanation, action=action,
+            params=params,
             results=results if isinstance(results, list) else [results],
             row_count=len(results) if isinstance(results, list) else 1,
         )

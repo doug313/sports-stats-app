@@ -277,7 +277,17 @@ const FILTER_CONFIG = {
 
 function ResultsTable({ rows, mode, onGameClick }) {
   if (!rows?.length) return null
-  const cols = COLS[mode] ?? Object.keys(rows[0]).map(k => ({ key: k, label: k }))
+  const cols = (mode === "dynamic" || !COLS[mode])
+    ? Object.keys(rows[0])
+        .filter(k => k !== "game_id" && k !== "playerid")
+        .map(k => ({
+          key: k,
+          label: k.replace(/_/g, " ").replace(/\b\w/g, l => l.toUpperCase()),
+          fmt: ["avg","obp","slg","ops","era","whip","ip"].includes(k)
+            ? v => v?.toFixed ? v.toFixed(k === "era" || k === "whip" ? 2 : k === "ip" ? 1 : 3) ?? "—" : v ?? "—"
+            : undefined
+        }))
+    : COLS[mode]
   const clickable = (mode === "mlb_api") && onGameClick
   return (
     <div className="table-wrap">
@@ -445,17 +455,8 @@ function AiSearch({ onResults, onGameClick }) {
       setExplanation(data.explanation)
       setSql(data.sql || "")
       setSource(data.source)
-      const mode = data.source === "mlb_api" ? "mlb_api"
-             : data.source === "lahman"   ? "batting"
-             : data.action  === "search_games"    ? "retro_games"
-             : data.action  === "player_gamelog"  ? "retro_batting"
-             : data.action  === "player_pitching" ? "retro_pitching"
-             : data.action  === "advanced_search" ? (
-                 (data.params?.shutout || data.params?.no_hitter || data.params?.min_k_game)
-                 ? "retro_pitching_search" : "retro_advanced"
-               )
-             : data.action  === "game_plays"      ? "retro_plays"
-             : "batting"
+      // Dynamic columns built from actual result fields — works for any action
+      const mode = data.source === "mlb_api" ? "mlb_api" : "dynamic"
       onResults(data.results, mode)
     } catch (e) { setError(e.message) }
     finally { setLoading(false) }
@@ -682,7 +683,7 @@ export default function Root() {
   const { isSignedIn, isLoaded } = useUser()
   const { signOut, user } = useClerk()
 
-  //TEMP: bypass auth for local testing — remove before deploy
+  // Auth bypassed for sharing — uncomment to re-enable login
   // if (!isLoaded) return <div className="auth-gate"><div className="loading-msg">Loading…</div></div>
   // if (!isSignedIn) return <SignInScreen />
 

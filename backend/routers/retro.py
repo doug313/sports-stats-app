@@ -346,7 +346,7 @@ def player_pitching_log(
             END                                                            AS opponent,
             g.away_score,
             g.home_score,
-            ROUND(SUM(e.outs_on_play) / 3.0, 1)                          AS ip,
+            ROUND((SUM(e.outs_on_play) / 3.0)::NUMERIC, 1)               AS ip,
             COUNT(DISTINCT e.event_num)                                    AS bf,
             SUM(CASE WHEN e.hit_value > 0 THEN 1 ELSE 0 END)             AS hits_allowed,
             SUM(COALESCE(e.runs_scored, 0))                               AS runs_allowed,
@@ -524,7 +524,7 @@ def advanced_search(
             LEFT JOIN retro_people rp ON g.winning_pitcher  = rp.retro_id
             WHERE {where}
             GROUP BY
-                g.game_id, e.batting_team, g.date, g.year,
+                g.game_id, g.date, g.year,
                 g.away_team, g.away_score,
                 g.home_team, g.home_score,
                 g.winning_pitcher, rp.full_name

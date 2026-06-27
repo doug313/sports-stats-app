@@ -4,8 +4,6 @@ from db.database import query
 
 router = APIRouter()
 
-# ── team name → Lahman code mapping ──────────────────────────────────────────
-
 TEAM_NAME_MAP = {
     "yankees": "NYA", "new york yankees": "NYA",
     "mets": "NYN", "new york mets": "NYN",
@@ -42,15 +40,12 @@ TEAM_NAME_MAP = {
 }
 
 def resolve_team(team: str) -> str:
-    """Convert team name or Lahman code to canonical Lahman team code."""
     if not team:
         return team
     if len(team) <= 3:
         return team.upper()
     return TEAM_NAME_MAP.get(team.lower().strip(), team.upper())
 
-
-# ── batting search ────────────────────────────────────────────────────────────
 
 @router.get("/search/batting")
 def search_batting(
@@ -78,54 +73,54 @@ def search_batting(
     sort_dir:      Optional[str]   = "desc",
     limit:         int             = Query(default=50, le=200),
 ):
-    conditions = ["1=1", "b.AB > 0"]
+    conditions = ["1=1", "b.ab > 0"]
     params = {}
 
     if player_name:
-        conditions.append("LOWER(p.nameFirst || ' ' || p.nameLast) LIKE :name")
+        conditions.append("LOWER(p.namefirst || ' ' || p.namelast) LIKE :name")
         params["name"] = f"%{player_name.lower()}%"
     if team:
-        conditions.append("b.teamID = :team")
+        conditions.append("b.teamid = :team")
         params["team"] = resolve_team(team)
     if year_from:
-        conditions.append("b.yearID >= :year_from")
+        conditions.append("b.yearid >= :year_from")
         params["year_from"] = year_from
     if year_to:
-        conditions.append("b.yearID <= :year_to")
+        conditions.append("b.yearid <= :year_to")
         params["year_to"] = year_to
     if bats:
         conditions.append("p.bats = :bats")
         params["bats"] = bats.upper()
     if min_g is not None:
-        conditions.append("b.G >= :min_g"); params["min_g"] = min_g
+        conditions.append("b.g >= :min_g"); params["min_g"] = min_g
     if min_ab is not None:
-        conditions.append("b.AB >= :min_ab"); params["min_ab"] = min_ab
+        conditions.append("b.ab >= :min_ab"); params["min_ab"] = min_ab
     if min_hr is not None:
-        conditions.append("b.HR >= :min_hr"); params["min_hr"] = min_hr
+        conditions.append("b.hr >= :min_hr"); params["min_hr"] = min_hr
     if max_hr is not None:
-        conditions.append("b.HR <= :max_hr"); params["max_hr"] = max_hr
+        conditions.append("b.hr <= :max_hr"); params["max_hr"] = max_hr
     if min_hits is not None:
-        conditions.append("b.H >= :min_hits"); params["min_hits"] = min_hits
+        conditions.append("b.h >= :min_hits"); params["min_hits"] = min_hits
     if min_rbi is not None:
-        conditions.append("b.RBI >= :min_rbi"); params["min_rbi"] = min_rbi
+        conditions.append("b.rbi >= :min_rbi"); params["min_rbi"] = min_rbi
     if min_sb is not None:
-        conditions.append("b.SB >= :min_sb"); params["min_sb"] = min_sb
+        conditions.append("b.sb >= :min_sb"); params["min_sb"] = min_sb
     if min_bb is not None:
-        conditions.append("b.BB >= :min_bb"); params["min_bb"] = min_bb
+        conditions.append("b.bb >= :min_bb"); params["min_bb"] = min_bb
     if min_so is not None:
-        conditions.append("b.SO >= :min_so"); params["min_so"] = min_so
+        conditions.append("b.so >= :min_so"); params["min_so"] = min_so
     if max_so is not None:
-        conditions.append("b.SO <= :max_so"); params["max_so"] = max_so
+        conditions.append("b.so <= :max_so"); params["max_so"] = max_so
     if min_runs is not None:
-        conditions.append("b.R >= :min_runs"); params["min_runs"] = min_runs
+        conditions.append("b.r >= :min_runs"); params["min_runs"] = min_runs
     if min_2b is not None:
-        conditions.append("b.\"2B\" >= :min_2b"); params["min_2b"] = min_2b
+        conditions.append("b.b2 >= :min_2b"); params["min_2b"] = min_2b
     if min_3b is not None:
-        conditions.append("b.\"3B\" >= :min_3b"); params["min_3b"] = min_3b
+        conditions.append("b.b3 >= :min_3b"); params["min_3b"] = min_3b
 
-    avg_expr  = "CAST(b.H AS FLOAT) / NULLIF(b.AB, 0)"
-    obp_expr  = "CAST(b.H + COALESCE(b.BB,0) + COALESCE(b.HBP,0) AS FLOAT) / NULLIF(b.AB + COALESCE(b.BB,0) + COALESCE(b.HBP,0) + COALESCE(b.SF,0), 0)"
-    slg_expr  = "CAST(b.H + COALESCE(b.\"2B\",0) + 2*COALESCE(b.\"3B\",0) + 3*b.HR AS FLOAT) / NULLIF(b.AB, 0)"
+    avg_expr  = "CAST(b.h AS FLOAT) / NULLIF(b.ab, 0)"
+    obp_expr  = "CAST(b.h + COALESCE(b.bb,0) + COALESCE(b.hbp,0) AS FLOAT) / NULLIF(b.ab + COALESCE(b.bb,0) + COALESCE(b.hbp,0) + COALESCE(b.sf,0), 0)"
+    slg_expr  = "CAST(b.h + COALESCE(b.b2,0) + 2*COALESCE(b.b3,0) + 3*b.hr AS FLOAT) / NULLIF(b.ab, 0)"
     ops_expr  = f"({obp_expr}) + ({slg_expr})"
 
     if min_avg is not None:
@@ -140,42 +135,42 @@ def search_batting(
         conditions.append(f"({ops_expr}) >= :min_ops"); params["min_ops"] = min_ops
 
     sort_map = {
-        "year": "b.yearID", "hr": "b.HR", "avg": avg_expr, "rbi": "b.RBI",
-        "hits": "b.H", "sb": "b.SB", "obp": obp_expr, "slg": slg_expr,
-        "ops": ops_expr, "bb": "b.BB", "so": "b.SO", "runs": "b.R",
+        "year": "b.yearid", "hr": "b.hr", "avg": avg_expr, "rbi": "b.rbi",
+        "hits": "b.h", "sb": "b.sb", "obp": obp_expr, "slg": slg_expr,
+        "ops": ops_expr, "bb": "b.bb", "so": "b.so", "runs": "b.r",
     }
-    order_col = sort_map.get(sort_by or "year", "b.yearID")
+    order_col = sort_map.get(sort_by or "year", "b.yearid")
     direction = "ASC" if (sort_dir or "desc").lower() == "asc" else "DESC"
 
     where = " AND ".join(conditions)
     sql = f"""
         SELECT
-            p.nameFirst || ' ' || p.nameLast AS player_name,
-            p.playerID,
-            b.yearID  AS year,
-            b.teamID  AS team,
+            p.namefirst || ' ' || p.namelast AS player_name,
+            p.playerid,
+            b.yearid  AS year,
+            b.teamid  AS team,
             p.bats,
-            b.G       AS games,
-            b.AB      AS at_bats,
-            b.R       AS runs,
-            b.H       AS hits,
-            b."2B"    AS doubles,
-            b."3B"    AS triples,
-            b.HR      AS home_runs,
-            b.RBI     AS rbi,
-            b.SB      AS stolen_bases,
-            b.CS      AS caught_stealing,
-            b.BB      AS walks,
-            b.SO      AS strikeouts,
-            b.HBP     AS hbp,
-            b.SF      AS sac_flies,
-            b.GIDP    AS gidp,
-            ROUND({avg_expr}, 3)  AS avg,
-            ROUND({obp_expr}, 3)  AS obp,
-            ROUND({slg_expr}, 3)  AS slg,
-            ROUND({ops_expr}, 3)  AS ops
+            b.g       AS games,
+            b.ab      AS at_bats,
+            b.r       AS runs,
+            b.h       AS hits,
+            b.b2      AS doubles,
+            b.b3      AS triples,
+            b.hr      AS home_runs,
+            b.rbi     AS rbi,
+            b.sb      AS stolen_bases,
+            b.cs      AS caught_stealing,
+            b.bb      AS walks,
+            b.so      AS strikeouts,
+            b.hbp     AS hbp,
+            b.sf      AS sac_flies,
+            b.gidp    AS gidp,
+            ROUND(({avg_expr})::NUMERIC, 3)  AS avg,
+            ROUND(({obp_expr})::NUMERIC, 3)  AS obp,
+            ROUND(({slg_expr})::NUMERIC, 3)  AS slg,
+            ROUND(({ops_expr})::NUMERIC, 3)  AS ops
         FROM batting b
-        JOIN people p ON b.playerID = p.playerID
+        JOIN people p ON b.playerid = p.playerid
         WHERE {where}
         ORDER BY {order_col} {direction}
         LIMIT :limit
@@ -183,8 +178,6 @@ def search_batting(
     params["limit"] = limit
     return query(sql, params)
 
-
-# ── pitching search ───────────────────────────────────────────────────────────
 
 @router.get("/search/pitching")
 def search_pitching(
@@ -211,53 +204,53 @@ def search_pitching(
     sort_dir:      Optional[str]   = "desc",
     limit:         int             = Query(default=50, le=200),
 ):
-    conditions = ["1=1", "pt.IPouts > 0"]
+    conditions = ["1=1", "pt.ipouts > 0"]
     params = {}
 
     if player_name:
-        conditions.append("LOWER(p.nameFirst || ' ' || p.nameLast) LIKE :name")
+        conditions.append("LOWER(p.namefirst || ' ' || p.namelast) LIKE :name")
         params["name"] = f"%{player_name.lower()}%"
     if team:
-        conditions.append("pt.teamID = :team")
+        conditions.append("pt.teamid = :team")
         params["team"] = resolve_team(team)
     if year_from:
-        conditions.append("pt.yearID >= :year_from"); params["year_from"] = year_from
+        conditions.append("pt.yearid >= :year_from"); params["year_from"] = year_from
     if year_to:
-        conditions.append("pt.yearID <= :year_to"); params["year_to"] = year_to
+        conditions.append("pt.yearid <= :year_to"); params["year_to"] = year_to
     if throws:
         conditions.append("p.throws = :throws"); params["throws"] = throws.upper()
     if starter == "yes":
-        conditions.append("pt.GS > 0")
+        conditions.append("pt.gs > 0")
     elif starter == "no":
-        conditions.append("(pt.GS = 0 OR pt.GS IS NULL)")
+        conditions.append("(pt.gs = 0 OR pt.gs IS NULL)")
     if min_g is not None:
-        conditions.append("pt.G >= :min_g"); params["min_g"] = min_g
+        conditions.append("pt.g >= :min_g"); params["min_g"] = min_g
     if min_gs is not None:
-        conditions.append("pt.GS >= :min_gs"); params["min_gs"] = min_gs
+        conditions.append("pt.gs >= :min_gs"); params["min_gs"] = min_gs
     if min_wins is not None:
-        conditions.append("pt.W >= :min_wins"); params["min_wins"] = min_wins
+        conditions.append("pt.w >= :min_wins"); params["min_wins"] = min_wins
     if max_losses is not None:
-        conditions.append("pt.L <= :max_losses"); params["max_losses"] = max_losses
+        conditions.append("pt.l <= :max_losses"); params["max_losses"] = max_losses
     if min_sv is not None:
-        conditions.append("pt.SV >= :min_sv"); params["min_sv"] = min_sv
+        conditions.append("pt.sv >= :min_sv"); params["min_sv"] = min_sv
     if max_era is not None:
-        conditions.append("pt.ERA <= :max_era"); params["max_era"] = max_era
+        conditions.append("pt.era <= :max_era"); params["max_era"] = max_era
     if min_era is not None:
-        conditions.append("pt.ERA >= :min_era"); params["min_era"] = min_era
+        conditions.append("pt.era >= :min_era"); params["min_era"] = min_era
     if min_so is not None:
-        conditions.append("pt.SO >= :min_so"); params["min_so"] = min_so
+        conditions.append("pt.so >= :min_so"); params["min_so"] = min_so
     if max_bb is not None:
-        conditions.append("pt.BB <= :max_bb"); params["max_bb"] = max_bb
+        conditions.append("pt.bb <= :max_bb"); params["max_bb"] = max_bb
     if min_ip is not None:
-        conditions.append("CAST(pt.IPouts AS FLOAT)/3 >= :min_ip"); params["min_ip"] = min_ip
+        conditions.append("CAST(pt.ipouts AS FLOAT)/3 >= :min_ip"); params["min_ip"] = min_ip
     if min_cg is not None:
-        conditions.append("pt.CG >= :min_cg"); params["min_cg"] = min_cg
+        conditions.append("pt.cg >= :min_cg"); params["min_cg"] = min_cg
     if min_sho is not None:
-        conditions.append("pt.SHO >= :min_sho"); params["min_sho"] = min_sho
+        conditions.append("pt.sho >= :min_sho"); params["min_sho"] = min_sho
 
-    ip_expr   = "CAST(pt.IPouts AS FLOAT) / 3"
-    whip_expr = f"CAST(pt.H + pt.BB AS FLOAT) / NULLIF(({ip_expr}), 0)"
-    k9_expr   = f"pt.SO * 9.0 / NULLIF(({ip_expr}), 0)"
+    ip_expr   = "CAST(pt.ipouts AS FLOAT) / 3"
+    whip_expr = f"CAST(pt.h + pt.bb AS FLOAT) / NULLIF(({ip_expr}), 0)"
+    k9_expr   = f"pt.so * 9.0 / NULLIF(({ip_expr}), 0)"
 
     if max_whip is not None:
         conditions.append(f"({whip_expr}) <= :max_whip"); params["max_whip"] = max_whip
@@ -265,40 +258,40 @@ def search_pitching(
         conditions.append(f"({k9_expr}) >= :min_k9"); params["min_k9"] = min_k9
 
     sort_map = {
-        "year": "pt.yearID", "era": "pt.ERA", "wins": "pt.W", "so": "pt.SO",
-        "sv": "pt.SV", "ip": ip_expr, "whip": whip_expr, "k9": k9_expr,
+        "year": "pt.yearid", "era": "pt.era", "wins": "pt.w", "so": "pt.so",
+        "sv": "pt.sv", "ip": ip_expr, "whip": whip_expr, "k9": k9_expr,
     }
-    order_col = sort_map.get(sort_by or "year", "pt.yearID")
+    order_col = sort_map.get(sort_by or "year", "pt.yearid")
     direction = "ASC" if (sort_dir or "desc").lower() == "asc" else "DESC"
 
     where = " AND ".join(conditions)
     sql = f"""
         SELECT
-            p.nameFirst || ' ' || p.nameLast AS player_name,
-            p.playerID,
-            pt.yearID  AS year,
-            pt.teamID  AS team,
+            p.namefirst || ' ' || p.namelast AS player_name,
+            p.playerid,
+            pt.yearid  AS year,
+            pt.teamid  AS team,
             p.throws,
-            pt.W       AS wins,
-            pt.L       AS losses,
-            pt.G       AS games,
-            pt.GS      AS games_started,
-            pt.CG      AS complete_games,
-            pt.SHO     AS shutouts,
-            pt.SV      AS saves,
-            ROUND({ip_expr}, 1)   AS innings_pitched,
-            pt.H       AS hits_allowed,
-            pt.ER      AS earned_runs,
-            pt.HR      AS hr_allowed,
-            pt.BB      AS walks,
-            pt.SO      AS strikeouts,
-            pt.HBP     AS hbp,
-            pt.WP      AS wild_pitches,
-            ROUND(pt.ERA, 2)      AS era,
-            ROUND({whip_expr}, 3) AS whip,
-            ROUND({k9_expr}, 1)   AS k_per_9
-        FROM Pitching pt
-        JOIN people p ON pt.playerID = p.playerID
+            pt.w       AS wins,
+            pt.l       AS losses,
+            pt.g       AS games,
+            pt.gs      AS games_started,
+            pt.cg      AS complete_games,
+            pt.sho     AS shutouts,
+            pt.sv      AS saves,
+            ROUND(({ip_expr})::NUMERIC, 1)   AS innings_pitched,
+            pt.h       AS hits_allowed,
+            pt.er      AS earned_runs,
+            pt.hr      AS hr_allowed,
+            pt.bb      AS walks,
+            pt.so      AS strikeouts,
+            pt.hbp     AS hbp,
+            pt.wp      AS wild_pitches,
+            ROUND(pt.era::NUMERIC, 2)        AS era,
+            ROUND(({whip_expr})::NUMERIC, 3) AS whip,
+            ROUND(({k9_expr})::NUMERIC, 1)   AS k_per_9
+        FROM pitching pt
+        JOIN people p ON pt.playerid = p.playerid
         WHERE {where}
         ORDER BY {order_col} {direction}
         LIMIT :limit
@@ -306,8 +299,6 @@ def search_pitching(
     params["limit"] = limit
     return query(sql, params)
 
-
-# ── fielding search ───────────────────────────────────────────────────────────
 
 @router.get("/search/fielding")
 def search_fielding(
@@ -324,55 +315,53 @@ def search_fielding(
     params = {}
 
     if player_name:
-        conditions.append("LOWER(p.nameFirst || ' ' || p.nameLast) LIKE :name")
+        conditions.append("LOWER(p.namefirst || ' ' || p.namelast) LIKE :name")
         params["name"] = f"%{player_name.lower()}%"
     if team:
-        conditions.append("f.teamID = :team")
+        conditions.append("f.teamid = :team")
         params["team"] = resolve_team(team)
     if year_from:
-        conditions.append("f.yearID >= :year_from"); params["year_from"] = year_from
+        conditions.append("f.yearid >= :year_from"); params["year_from"] = year_from
     if year_to:
-        conditions.append("f.yearID <= :year_to"); params["year_to"] = year_to
+        conditions.append("f.yearid <= :year_to"); params["year_to"] = year_to
     if position:
-        conditions.append("f.POS = :pos"); params["pos"] = position.upper()
+        conditions.append("f.pos = :pos"); params["pos"] = position.upper()
     if min_g is not None:
-        conditions.append("f.G >= :min_g"); params["min_g"] = min_g
+        conditions.append("f.g >= :min_g"); params["min_g"] = min_g
     if max_errors is not None:
-        conditions.append("f.E <= :max_errors"); params["max_errors"] = max_errors
+        conditions.append("f.e <= :max_errors"); params["max_errors"] = max_errors
 
     where = " AND ".join(conditions)
     sql = f"""
         SELECT
-            p.nameFirst || ' ' || p.nameLast AS player_name,
-            p.playerID,
-            f.yearID AS year,
-            f.teamID AS team,
-            f.POS    AS position,
-            f.G      AS games,
-            f.GS     AS games_started,
-            f.PO     AS putouts,
-            f.A      AS assists,
-            f.E      AS errors,
-            f.DP     AS double_plays,
-            ROUND(CAST(f.PO + f.A AS FLOAT) / NULLIF(f.PO + f.A + f.E, 0), 3) AS fielding_pct
+            p.namefirst || ' ' || p.namelast AS player_name,
+            p.playerid,
+            f.yearid AS year,
+            f.teamid AS team,
+            f.pos    AS position,
+            f.g      AS games,
+            f.gs     AS games_started,
+            f.po     AS putouts,
+            f.a      AS assists,
+            f.e      AS errors,
+            f.dp     AS double_plays,
+            ROUND((CAST(f.po + f.a AS FLOAT) / NULLIF(f.po + f.a + f.e, 0))::NUMERIC, 3) AS fielding_pct
         FROM fielding f
-        JOIN people p ON f.playerID = p.playerID
+        JOIN people p ON f.playerid = p.playerid
         WHERE {where}
-        ORDER BY f.yearID DESC, f.G DESC
+        ORDER BY f.yearid DESC, f.g DESC
         LIMIT :limit
     """
     params["limit"] = limit
     return query(sql, params)
 
 
-# ── meta endpoints ────────────────────────────────────────────────────────────
-
 @router.get("/teams")
 def get_teams():
-    sql = "SELECT DISTINCT teamID FROM teams ORDER BY teamID"
-    return [r["teamID"] for r in query(sql)]
+    sql = "SELECT DISTINCT teamid FROM teams ORDER BY teamid"
+    return [r["teamid"] for r in query(sql)]
 
 @router.get("/years")
 def get_years():
-    sql = "SELECT MIN(yearID) as min_year, MAX(yearID) as max_year FROM batting"
+    sql = "SELECT MIN(yearid) as min_year, MAX(yearid) as max_year FROM batting"
     return query(sql)[0]

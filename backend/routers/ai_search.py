@@ -30,20 +30,22 @@ NEVER use for individual game results or play-by-play.
   "explanation": "<one sentence>"
 }
 
-LAHMAN SCHEMA (all table names are lowercase):
-people       (playerID, nameFirst, nameLast, birthYear, birthCountry, weight, height, bats, throws, debut, finalGame)
-batting      (playerID, yearID, teamID, G, AB, R, H, 2B, 3B, HR, RBI, SB, CS, BB, SO, IBB, HBP, SH, SF, GIDP)
-             -- avg = CAST(H AS FLOAT)/NULLIF(AB,0)
-pitching     (playerID, yearID, teamID, W, L, G, GS, CG, SHO, SV, IPouts, H, ER, HR, BB, SO, ERA, WP, BK, BFP, R)
-             -- IPouts/3 = innings pitched
-fielding     (playerID, yearID, teamID, POS, G, GS, InnOuts, PO, A, E, DP)
-teams        (yearID, teamID, franchID, divID, Rank, G, W, L, R, AB, H, HR, BB, SO, RA, ER, ERA, name, park, attendance)
-awardsplayers(playerID, awardID, yearID, lgID)
-allstarfull  (playerID, yearID, teamID, lgID, GP, startingPos)
-halloffame   (playerID, yearID, votedBy, ballots, needed, votes, inducted, category)
-appearances  (playerID, yearID, teamID, G_all, G_p, G_c, G_1b, G_2b, G_3b, G_ss, G_lf, G_cf, G_rf, G_of, G_dh)
-salaries     (playerID, yearID, teamID, lgID, salary)
+LAHMAN SCHEMA (all table AND column names are lowercase):
+people       (playerid, namefirst, namelast, birthyear, birthcountry, weight, height, bats, throws, debut, finalgame)
+batting      (playerid, yearid, teamid, g, ab, r, h, b2, b3, hr, rbi, sb, cs, bb, so, ibb, hbp, sh, sf, gidp)
+             -- avg = CAST(h AS FLOAT)/NULLIF(ab,0)
+             -- NOTE: 2B column is named b2, 3B column is named b3
+pitching     (playerid, yearid, teamid, w, l, g, gs, cg, sho, sv, ipouts, h, er, hr, bb, so, era, wp, bk, bfp, r)
+             -- ipouts/3 = innings pitched. Use era::NUMERIC for ROUND()
+fielding     (playerid, yearid, teamid, pos, g, gs, innouts, po, a, e, dp)
+teams        (yearid, teamid, franchid, divid, rank, g, w, l, r, ab, h, hr, bb, so, ra, er, era, name, park, attendance)
+awardsplayers(playerid, awardid, yearid, lgid)
+allstarfull  (playerid, yearid, teamid, lgid, gp, startingpos)
+halloffame   (playerid, yearid, votedby, ballots, needed, votes, inducted, category)
+appearances  (playerid, yearid, teamid, g_all, g_p, g_c, g_1b, g_2b, g_3b, g_ss, g_lf, g_cf, g_rf, g_of, g_dh)
+salaries     (playerid, yearid, teamid, lgid, salary)
 Always JOIN people for player names. Always LIMIT to 100 rows max.
+CRITICAL: Use ::NUMERIC cast for ROUND() e.g. ROUND(era::NUMERIC, 2)
 
 ━━━ SOURCE 2: retrosheet ━━━
 Game-level and play-by-play data. 1920–2025 (ALL completed games).

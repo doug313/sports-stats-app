@@ -682,8 +682,9 @@ export default function Root() {
   const { isSignedIn, isLoaded } = useUser()
   const { signOut, user } = useClerk()
 
-  if (!isLoaded) return <div className="auth-gate"><div className="loading-msg">Loading…</div></div>
-  if (!isSignedIn) return <SignInScreen />
+  //TEMP: bypass auth for local testing — remove before deploy
+  // if (!isLoaded) return <div className="auth-gate"><div className="loading-msg">Loading…</div></div>
+  // if (!isSignedIn) return <SignInScreen />
 
   return (
     <div className="app">

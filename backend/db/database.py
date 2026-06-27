@@ -6,7 +6,6 @@ from sqlalchemy.pool import NullPool
 
 DATABASE_URL = os.environ.get("DATABASE_URL", "sqlite:///./lahman.db")
 
-# Railway gives you a postgres:// URL — SQLAlchemy needs postgresql://
 if DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
@@ -23,6 +22,6 @@ def query(sql: str, params: dict = {}):
         if "no such table" in msg or "does not exist" in msg:
             raise HTTPException(
                 status_code=503,
-                detail="Database not loaded yet. Run the import script first."
+                detail=f"Table not found: {msg[:300]}"
             )
-        raise HTTPException(status_code=500, detail=f"Database error: {msg[:200]}")
+        raise HTTPException(status_code=500, detail=f"Database error: {msg[:300]}")

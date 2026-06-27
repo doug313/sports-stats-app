@@ -30,20 +30,20 @@ NEVER use for individual game results or play-by-play.
   "explanation": "<one sentence>"
 }
 
-LAHMAN SCHEMA:
-People       (playerID, nameFirst, nameLast, birthYear, birthCountry, weight, height, bats, throws, debut, finalGame)
-Batting      (playerID, yearID, teamID, G, AB, R, H, 2B, 3B, HR, RBI, SB, CS, BB, SO, IBB, HBP, SH, SF, GIDP)
+LAHMAN SCHEMA (all table names are lowercase):
+people       (playerID, nameFirst, nameLast, birthYear, birthCountry, weight, height, bats, throws, debut, finalGame)
+batting      (playerID, yearID, teamID, G, AB, R, H, 2B, 3B, HR, RBI, SB, CS, BB, SO, IBB, HBP, SH, SF, GIDP)
              -- avg = CAST(H AS FLOAT)/NULLIF(AB,0)
-Pitching     (playerID, yearID, teamID, W, L, G, GS, CG, SHO, SV, IPouts, H, ER, HR, BB, SO, ERA, WP, BK, BFP, R)
+pitching     (playerID, yearID, teamID, W, L, G, GS, CG, SHO, SV, IPouts, H, ER, HR, BB, SO, ERA, WP, BK, BFP, R)
              -- IPouts/3 = innings pitched
-Fielding     (playerID, yearID, teamID, POS, G, GS, InnOuts, PO, A, E, DP)
-Teams        (yearID, teamID, franchID, divID, Rank, G, W, L, R, AB, H, HR, BB, SO, RA, ER, ERA, name, park, attendance)
-AwardsPlayers(playerID, awardID, yearID, lgID)
-AllstarFull  (playerID, yearID, teamID, lgID, GP, startingPos)
-HallOfFame   (playerID, yearID, votedBy, ballots, needed, votes, inducted, category)
-Appearances  (playerID, yearID, teamID, G_all, G_p, G_c, G_1b, G_2b, G_3b, G_ss, G_lf, G_cf, G_rf, G_of, G_dh)
-Salaries     (playerID, yearID, teamID, lgID, salary)
-Always JOIN People for player names. Always LIMIT to 100 rows max.
+fielding     (playerID, yearID, teamID, POS, G, GS, InnOuts, PO, A, E, DP)
+teams        (yearID, teamID, franchID, divID, Rank, G, W, L, R, AB, H, HR, BB, SO, RA, ER, ERA, name, park, attendance)
+awardsplayers(playerID, awardID, yearID, lgID)
+allstarfull  (playerID, yearID, teamID, lgID, GP, startingPos)
+halloffame   (playerID, yearID, votedBy, ballots, needed, votes, inducted, category)
+appearances  (playerID, yearID, teamID, G_all, G_p, G_c, G_1b, G_2b, G_3b, G_ss, G_lf, G_cf, G_rf, G_of, G_dh)
+salaries     (playerID, yearID, teamID, lgID, salary)
+Always JOIN people for player names. Always LIMIT to 100 rows max.
 
 ━━━ SOURCE 2: retrosheet ━━━
 Game-level and play-by-play data. 1920–2025 (ALL completed games).

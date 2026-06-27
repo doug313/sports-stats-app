@@ -20,16 +20,16 @@ if DATABASE_URL.startswith("postgres://"):
 
 # Maps CSV filename → SQL table name
 TABLES = {
-    "People.csv":        "People",
-    "Batting.csv":       "Batting",
-    "Pitching.csv":      "Pitching",
-    "Fielding.csv":      "Fielding",
-    "Teams.csv":         "Teams",
-    "AwardsPlayers.csv": "AwardsPlayers",
-    "AllstarFull.csv":   "AllstarFull",
-    "HallOfFame.csv":    "HallOfFame",
-    "Appearances.csv":   "Appearances",
-    "Salaries.csv":      "Salaries",
+    "People.csv":        "people",
+    "Batting.csv":       "batting",
+    "Pitching.csv":      "pitching",
+    "Fielding.csv":      "fielding",
+    "Teams.csv":         "teams",
+    "AwardsPlayers.csv": "awardsplayers",
+    "AllstarFull.csv":   "allstarfull",
+    "HallOfFame.csv":    "halloffame",
+    "Appearances.csv":   "appearances",
+    "Salaries.csv":      "salaries",
 }
 
 def import_csvs(csv_dir: str):

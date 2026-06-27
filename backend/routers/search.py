@@ -174,8 +174,8 @@ def search_batting(
             ROUND({obp_expr}, 3)  AS obp,
             ROUND({slg_expr}, 3)  AS slg,
             ROUND({ops_expr}, 3)  AS ops
-        FROM Batting b
-        JOIN People p ON b.playerID = p.playerID
+        FROM batting b
+        JOIN people p ON b.playerID = p.playerID
         WHERE {where}
         ORDER BY {order_col} {direction}
         LIMIT :limit
@@ -298,7 +298,7 @@ def search_pitching(
             ROUND({whip_expr}, 3) AS whip,
             ROUND({k9_expr}, 1)   AS k_per_9
         FROM Pitching pt
-        JOIN People p ON pt.playerID = p.playerID
+        JOIN people p ON pt.playerID = p.playerID
         WHERE {where}
         ORDER BY {order_col} {direction}
         LIMIT :limit
@@ -355,8 +355,8 @@ def search_fielding(
             f.E      AS errors,
             f.DP     AS double_plays,
             ROUND(CAST(f.PO + f.A AS FLOAT) / NULLIF(f.PO + f.A + f.E, 0), 3) AS fielding_pct
-        FROM Fielding f
-        JOIN People p ON f.playerID = p.playerID
+        FROM fielding f
+        JOIN people p ON f.playerID = p.playerID
         WHERE {where}
         ORDER BY f.yearID DESC, f.G DESC
         LIMIT :limit
@@ -369,10 +369,10 @@ def search_fielding(
 
 @router.get("/teams")
 def get_teams():
-    sql = "SELECT DISTINCT teamID FROM Teams ORDER BY teamID"
+    sql = "SELECT DISTINCT teamID FROM teams ORDER BY teamID"
     return [r["teamID"] for r in query(sql)]
 
 @router.get("/years")
 def get_years():
-    sql = "SELECT MIN(yearID) as min_year, MAX(yearID) as max_year FROM Batting"
+    sql = "SELECT MIN(yearID) as min_year, MAX(yearID) as max_year FROM batting"
     return query(sql)[0]
